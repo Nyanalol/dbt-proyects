@@ -1,0 +1,74 @@
+models:
+  - name: stg_tienda__clientes
+    description: "Maestro de clientes"
+    columns:
+      - name: cliente_id
+        description: "The primary key for this table"
+        data_tests:
+          - unique
+          - not_null
+      - name: nombre
+        description: "The name of the client"
+      - name: segmento
+        description: "The segment of the client"
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['mediana','enterprise','pyme']     
+          - not_null:
+              config:
+                severity: warn
+      - name: fecha_alta
+        description: "The date the client was added"
+
+
+  - name: stg_tienda__pagos
+    description: "Maestro de pagos"
+    columns:
+      - name: pago_id
+        description: "The primary key for this table"
+        data_tests:
+          - unique
+          - not_null
+      - name: pedido_id
+        description: "The ID of the order"
+        data_tests:
+          - relationships:
+              arguments: 
+                to: ref('stg_tienda__pedidos')
+                field: pedido_id
+      - name: metodo
+        description: "The payment method"
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['tarjeta','paypal','transferencia']
+      - name: importe
+        description: "The amount of the payment"
+
+
+  - name: stg_tienda__pedidos
+    description: "Maestro de pedidos"
+    columns:
+      - name: pedido_id
+        description: "The primary key for this table"
+        data_tests:
+          - unique
+          - not_null
+      - name: cliente_id
+        description: "The ID of the client"
+        data_tests:
+          - relationships:
+              arguments:
+                to: ref('stg_tienda__clientes')
+                field: cliente_id
+      - name: fecha_pedido
+        description: "The date the order was placed"
+      - name: estado
+        description: "The status of the order"
+        data_tests:
+          - accepted_values:
+              arguments:
+                values: ['pendiente','completado','cancelado']
+              config:
+                severity: warn
