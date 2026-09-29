@@ -1,0 +1,10 @@
+models:
+  - name: int_pagos_por_pedido
+    description: "Intermediate model for pagos por pedido"
+    columns:
+      - name: pedido_id
+        description: "ID of the pedido"
+      - name: importe
+        description: "Suma de pagos de todos los pedidos"
+    config:
+      materialized: ephemeral
