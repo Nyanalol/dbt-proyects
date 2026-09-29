@@ -1,74 +1,144 @@
+version: 2
+
+# Decisiones sobre los tests que fallan (M02, paso 5). Criterio de la ampliada M02 §7:
+#   a) corregir en staging  -> solo si el arreglo es mecánico e indiscutible
+#   b) tratar más adelante  -> si depende de una regla de negocio (se decide en M06)
+#   c) dejar que falle      -> error real de origen que no nos toca arreglar
+#
+# Ninguno de los fallos de P1 tiene arreglo mecánico: todos son (c), y los que afectan
+# al cálculo de lo cobrado son además (b).
+#
+# Patrón de severidad en los fallos de origen conocidos:
+#   warn_if: ">0"   -> el problema crónico se sigue viendo cada día
+#   error_if: ">5"  -> si de golpe hay muchos más, es un problema NUEVO (una exportación
+#                      rota) y prefiero parar a publicar. 5 es algo más del doble de lo
+#                      que hay hoy en el peor caso (3).
+#   store_failures  -> las filas que fallan quedan en main_dbt_test__audit para
+#                      investigarlas y mandárselas al proveedor sin relanzar nada.
+
 models:
   - name: stg_tienda__clientes
-    description: "Maestro de clientes"
+    description: >
+      Un cliente por fila, tal como lo exporta la tienda. Solo renombra `id` a
+      `cliente_id`; no corrige nada. Anomalías de origen conocidas (2026-09-24):
+      cliente 17 sin segmento; clientes 11 y 23 con fecha_alta en el futuro
+      (diciembre de 2026), que no caza ningún test de serie (M04).
     columns:
       - name: cliente_id
-        description: "The primary key for this table"
+        description: Clave del cliente en el sistema de la tienda.
         data_tests:
           - unique
           - not_null
       - name: nombre
-        description: "The name of the client"
+        description: Nombre y apellido. Las tildes son correctas; no se normalizan.
       - name: segmento
-        description: "The segment of the client"
+        description: >
+          Segmento comercial: pyme, mediana o enterprise. Puede venir vacío (cliente
+          17). No se imputa: un segmento no se adivina.
         data_tests:
+          # Este test no ve los NULL: `NULL not in (...)` no devuelve la fila.
           - accepted_values:
               arguments:
-                values: ['mediana','enterprise','pyme']     
+                values: ['mediana', 'enterprise', 'pyme']
+          # Decisión (c), warn: un cliente sin segmento no rompe ninguna relación (no
+          # hay dim_segmento), solo añade una categoría vacía al filtro del dashboard.
+          # Hay que preguntar a negocio si la quiere ver como 'desconocido' (M06).
           - not_null:
               config:
                 severity: warn
       - name: fecha_alta
-        description: "The date the client was added"
-
+        description: Fecha de alta del cliente en la tienda.
 
   - name: stg_tienda__pagos
-    description: "Maestro de pagos"
+    description: >
+      Un pago por fila. Un pedido puede tener varios pagos (10 pedidos tienen 2): es
+      estructura, no suciedad. Anomalías de origen conocidas: pagos 69 y 70 con
+      importe negativo (¿devoluciones?, pregunta para negocio, M06), y pagos 38 y 71
+      que apuntan a pedidos que no existen.
     columns:
       - name: pago_id
-        description: "The primary key for this table"
+        description: Clave del pago.
         data_tests:
           - unique
           - not_null
       - name: pedido_id
-        description: "The ID of the order"
+        description: Pedido al que corresponde el pago. No es único (N pagos por pedido).
         data_tests:
+          # Decisión (c) + (b). Fallan el pago 71 (pedido 777, un valor sin sentido) y
+          # el pago 38, de 3.048,87, que apunta al pedido 34, que falta del fichero. El
+          # pedido 34 falta por el mismo accidente de exportación que duplica el id 12:
+          # es UN incidente del proveedor con tres síntomas, y así se le comunica.
+          # Mientras tanto, esos pagos no pueden atribuirse a ningún pedido: fct_pedidos
+          # (grain = un pedido) no los verá. Si se quiere cuadrar el cobrado total, la
+          # diferencia hay que explicarla, no esconderla (M06).
           - relationships:
-              arguments: 
+              arguments:
                 to: ref('stg_tienda__pedidos')
                 field: pedido_id
+              config:
+                warn_if: ">0"
+                error_if: ">5"
+                store_failures: true
       - name: metodo
-        description: "The payment method"
+        description: Medio de pago.
         data_tests:
           - accepted_values:
               arguments:
-                values: ['tarjeta','paypal','transferencia']
+                values: ['tarjeta', 'paypal', 'transferencia']
       - name: importe
-        description: "The amount of the payment"
-
+        description: Importe del pago. Puede ser negativo (pagos 69 y 70); sin decidir.
 
   - name: stg_tienda__pedidos
-    description: "Maestro de pedidos"
+    description: >
+      Una fila por fila del origen de pedidos, NO un pedido por fila: el contrato de P1
+      fija ese grain a propósito, porque el origen trae el pedido_id 12 dos veces. Que
+      haya un pedido por fila es una garantía de fct_pedidos (M06), no de staging.
     columns:
       - name: pedido_id
-        description: "The primary key for this table"
+        description: Clave del pedido en el origen. Hoy NO es única (colisión en el 12).
         data_tests:
-          - unique
+          # Decisión (c), sin deduplicar. Las dos filas con id 12 tienen cliente,
+          # fecha y estado distintos: no es una fila repetida, son dos pedidos que
+          # chocan en la clave. Cualquier criterio para quedarse con una (la primera,
+          # la última...) es inventarse qué cliente hizo el pedido y borrar el otro.
+          # Además el pago 69 (-250,00) apunta al 12 y no se sabe a cuál. Va al
+          # proveedor; el tratamiento en el mart se decide en M06.
+          - unique:
+              config:
+                warn_if: ">0"
+                error_if: ">5"
+                store_failures: true
           - not_null
       - name: cliente_id
-        description: "The ID of the client"
+        description: Cliente que hizo el pedido.
         data_tests:
+          # Decisión (c) + (b). Fallan los pedidos 23 y 51 (cliente 999) y el 58
+          # (cliente 1044). El 999 repetido huele a centinela de "cliente desconocido"
+          # del sistema origen: hay que preguntar qué significa antes de tratarlo. Los
+          # pedidos son reales y tienen pagos, así que se publican y en el mart irán a
+          # un cliente "desconocido" en vez de desaparecer (M06).
           - relationships:
               arguments:
                 to: ref('stg_tienda__clientes')
                 field: cliente_id
+              config:
+                warn_if: ">0"
+                error_if: ">5"
+                store_failures: true
       - name: fecha_pedido
-        description: "The date the order was placed"
+        description: >
+          Fecha del pedido. 15 pedidos son anteriores al alta de su cliente, lo que es
+          imposible; ningún test de serie lo caza (test singular, M04).
       - name: estado
-        description: "The status of the order"
+        description: >
+          pendiente, completado o cancelado. El origen cuela 'ERROR_SYNC' (pedidos 15 y
+          42), un marcador técnico, no un estado de negocio.
         data_tests:
+          # Decisión (c), warn. ERROR_SYNC no se imputa (poner 'completado' por ser el
+          # más frecuente es inventarse ingresos). Se ve cada día hasta que el
+          # proveedor diga qué estado real tienen esos pedidos.
           - accepted_values:
               arguments:
-                values: ['pendiente','completado','cancelado']
+                values: ['pendiente', 'completado', 'cancelado']
               config:
                 severity: warn
