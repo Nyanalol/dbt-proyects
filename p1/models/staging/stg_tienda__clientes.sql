@@ -1,4 +1,4 @@
-SELECT 
+SELECT
     id AS cliente_id,
     nombre,
     segmento,

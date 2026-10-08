@@ -1,4 +1,4 @@
-SELECT 
+SELECT
     id AS pedido_id,
     cliente_id,
     fecha AS fecha_pedido,

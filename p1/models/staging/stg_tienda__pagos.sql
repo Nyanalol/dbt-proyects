@@ -1,4 +1,4 @@
-SELECT 
+SELECT
     id AS pago_id,
     pedido_id,
     metodo,

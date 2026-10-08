@@ -70,3 +70,6 @@ id,pedido_id,metodo,importe
 69,12,tarjeta,-250.0
 70,7,transferencia,-99.9
 71,777,paypal,120.0
+72,3,tarjeta,150.00
+73,5,paypal,80.50
+74,9,tarjeta,42.25
