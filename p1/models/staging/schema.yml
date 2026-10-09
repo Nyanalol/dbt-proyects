@@ -48,6 +48,13 @@ models:
                 severity: warn
       - name: fecha_alta
         description: Fecha de alta del cliente en la tienda.
+        data_tests:
+          - fecha_coherente:
+              arguments:
+                column_name: fecha_alta
+                fecha_referencia: current_date
+              config:
+                severity: error
 
   - name: stg_tienda__pagos
     description: >
@@ -129,6 +136,12 @@ models:
         description: >
           Fecha del pedido. 15 pedidos son anteriores al alta de su cliente, lo que es
           imposible; ningún test de serie lo caza (test singular, M04).
+        data_tests:
+        - fecha_coherente:
+            arguments:
+              fecha_referencia: current_date
+            config:
+              severity: error
       - name: estado
         description: >
           pendiente, completado o cancelado. El origen cuela 'ERROR_SYNC' (pedidos 15 y
