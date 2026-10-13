@@ -1,0 +1,17 @@
+models:
+  - name: fct_pedidos
+    description: >
+      Pedidos con lo cobrado. Grain objetivo: un pedido por fila. Hoy el pedido 12
+      sale dos veces porque llega duplicado del origen (ver stg_tienda__pedidos);
+      cómo resolverlo está pendiente.
+    columns:
+      - name: pedido_id
+        description: Clave del pedido.
+      - name: cliente_id
+        description: Cliente que hizo el pedido. Puede no existir en clientes (23, 51, 58).
+      - name: fecha_pedido
+        description: Fecha del pedido.
+      - name: estado
+        description: pendiente, completado o cancelado; puede traer 'ERROR_SYNC' del origen.
+      - name: importe_cobrado
+        description: '{{ doc("importe_cobrado") }}'

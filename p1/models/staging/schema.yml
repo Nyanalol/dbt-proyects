@@ -22,7 +22,7 @@ models:
       Un cliente por fila, tal como lo exporta la tienda. Solo renombra `id` a
       `cliente_id`; no corrige nada. Anomalías de origen conocidas (2026-09-24):
       cliente 17 sin segmento; clientes 11 y 23 con fecha_alta en el futuro
-      (diciembre de 2026), que no caza ningún test de serie (M04).
+      (diciembre de 2026), que caza el test fecha_coherente (error).
     columns:
       - name: cliente_id
         description: Clave del cliente en el sistema de la tienda.
@@ -40,6 +40,10 @@ models:
           - accepted_values:
               arguments:
                 values: ['mediana', 'enterprise', 'pyme']
+                # Si aparece una nueva categoría, salta un warning, no un error. Se añadirá a la lista de valores aceptados en el siguiente despliegue.
+              config:
+                severity: warn
+                store_failures: true
           # Decisión (c), warn: un cliente sin segmento no rompe ninguna relación (no
           # hay dim_segmento), solo añade una categoría vacía al filtro del dashboard.
           # Hay que preguntar a negocio si la quiere ver como 'desconocido' (M06).
@@ -55,12 +59,13 @@ models:
                 fecha_referencia: current_date
               config:
                 severity: error
+                store_failures: true
 
   - name: stg_tienda__pagos
     description: >
       Un pago por fila. Un pedido puede tener varios pagos (10 pedidos tienen 2): es
       estructura, no suciedad. Anomalías de origen conocidas: pagos 69 y 70 con
-      importe negativo (¿devoluciones?, pregunta para negocio, M06), y pagos 38 y 71
+      importe negativo (devoluciones: restan del cobrado), y pagos 38 y 71
       que apuntan a pedidos que no existen.
     columns:
       - name: pago_id
@@ -92,8 +97,11 @@ models:
           - accepted_values:
               arguments:
                 values: ['tarjeta', 'paypal', 'transferencia']
+                # Si aparece una nueva categoría, salta un warning, no un error. Se añadirá a la lista de valores aceptados en el siguiente despliegue.
+              config:
+                severity: warn
       - name: importe
-        description: Importe del pago. Puede ser negativo (pagos 69 y 70); sin decidir.
+        description: Importe del pago. Negativo = devolución (pagos 69 y 70).
 
   - name: stg_tienda__pedidos
     description: >
