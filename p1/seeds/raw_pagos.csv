@@ -73,3 +73,9 @@ id,pedido_id,metodo,importe
 72,3,tarjeta,150.00
 73,5,paypal,80.50
 74,9,tarjeta,42.25
+80,10,bizum,35.00
+81,11,bizum,60.00
+82,18,Bizum ,25.50
+83,20,BIZUM,90.00
+84,22,bizum,15.75
+85,10,bizum,120.00

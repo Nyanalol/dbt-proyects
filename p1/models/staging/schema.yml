@@ -96,7 +96,7 @@ models:
         data_tests:
           - accepted_values:
               arguments:
-                values: ['tarjeta', 'paypal', 'transferencia']
+                values: ['tarjeta', 'paypal', 'transferencia', 'bizum']
                 # Si aparece una nueva categoría, salta un warning, no un error. Se añadirá a la lista de valores aceptados en el siguiente despliegue.
               config:
                 severity: warn
