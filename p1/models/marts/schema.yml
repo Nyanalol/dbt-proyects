@@ -12,6 +12,6 @@ models:
       - name: fecha_pedido
         description: Fecha del pedido.
       - name: estado
-        description: pendiente, completado o cancelado; puede traer 'ERROR_SYNC' del origen.
+        description: pendiente, completado o cancelado; puede traer 'error_sync' (el origen lo manda como 'ERROR_SYNC'; staging lo normaliza).
       - name: importe_cobrado
         description: '{{ doc("importe_cobrado") }}'

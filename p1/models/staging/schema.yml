@@ -152,7 +152,7 @@ models:
               severity: error
       - name: estado
         description: >
-          pendiente, completado o cancelado. El origen cuela 'ERROR_SYNC' (pedidos 15 y
+          pendiente, completado o cancelado. El origen cuela 'ERROR_SYNC', que tras normalizar queda 'error_sync' (pedidos 15 y
           42), un marcador técnico, no un estado de negocio.
         data_tests:
           # Decisión (c), warn. ERROR_SYNC no se imputa (poner 'completado' por ser el

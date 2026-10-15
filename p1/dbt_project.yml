@@ -38,3 +38,7 @@ models:
       +materialized: view
     marts:
       +materialized: table
+      
+vars:
+  metodos: [transferencia, tarjeta, bizum, paypal]
+  meses_dev: 5

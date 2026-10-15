@@ -3,6 +3,11 @@ models:
     description: >
       Un pedido por fila con el total de sus pagos. Agrega stg_tienda__pagos antes de
       cruzar con pedidos, para que el JOIN del mart no multiplique filas.
+      Las columnas importe_<método> salen de un bucle sobre la variable `metodos`.
+      En contra del bucle: al haber puesto "SUM(importe) AS importe," la coma obliga
+      a que haya métodos en la variable, o dará error. Y un método que llegue del
+      origen sin estar en la variable no da error: se queda fuera de las columnas por
+      método (sí entra en el total), y la suma de las columnas deja de cuadrar sin avisar.
     config:
       materialized: ephemeral
     columns:
