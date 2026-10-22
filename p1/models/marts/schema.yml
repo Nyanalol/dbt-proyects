@@ -32,4 +32,23 @@ models:
         description: '{{ doc("importe_cobrado") }}'
   - name: dim_clientes
     description: >
-      El grain es el cliente.
+      Un cliente por fila. Incluye miembros desconocidos: una fila por cada cliente_id
+      que aparece en pedidos y no existe en el maestro (hoy 999 y 1044), con nombre y
+      segmento 'desconocido', para que ningún join desde fct_pedidos pierda ventas.
+    columns:
+      - name: cliente_id
+        description: Clave del cliente.
+        data_tests:
+          - unique
+          - not_null
+      - name: nombre
+        description: Nombre del cliente; 'desconocido' en los miembros desconocidos.
+      - name: segmento
+        description: >
+          pyme, mediana o enterprise. 'desconocido' si el maestro no lo trae (cliente 17)
+          o si el cliente no existe en el maestro. Regla de negocio: se aplica aquí, no
+          en staging, para que staging siga avisando de que el origen viene incompleto.
+      - name: fecha_alta
+        description: Fecha de alta. NULL en los miembros desconocidos.
+      - name: es_desconocido
+        description: TRUE si el cliente no existe en el maestro. Es la lista que se manda a negocio.
