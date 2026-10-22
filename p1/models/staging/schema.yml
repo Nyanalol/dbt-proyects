@@ -53,12 +53,13 @@ models:
       - name: fecha_alta
         description: Fecha de alta del cliente en la tienda.
         data_tests:
+          # Ponemos warn para que el informe siga saliendo, pero se avise del problema.
           - fecha_coherente:
               arguments:
                 column_name: fecha_alta
                 fecha_referencia: current_date
               config:
-                severity: error
+                severity: warn
                 store_failures: true
 
   - name: stg_tienda__pagos

@@ -1,17 +1,35 @@
 models:
   - name: fct_pedidos
     description: >
-      Pedidos con lo cobrado. Grain objetivo: un pedido por fila. Hoy el pedido 12
-      sale dos veces porque llega duplicado del origen (ver stg_tienda__pedidos);
-      cómo resolverlo está pendiente.
+      Un pedido por fila. Un pedido puede tener varios pagos, pero un pago solo puede
+      pertenecer a un pedido. Pedidos con lo cobrado. El origen trae el pedido_id 12 dos
+      veces (dos pedidos distintos que chocan en la clave): se queda la fila más
+      reciente; la otra (cliente 25, 2026-01-03) no aparece y se ha comunicado al
+      proveedor. No vale un DISTINCT: las dos filas son distintas, así que no las
+      junta, y aunque lo hiciera solo taparía el síntoma sin fijar el grain.
     columns:
       - name: pedido_id
-        description: Clave del pedido.
+        description: Clave del pedido. Única en este modelo (garantía del mart, no de staging).
+        data_tests:
+          - unique
+          - not_null
       - name: cliente_id
         description: Cliente que hizo el pedido. Puede no existir en clientes (23, 51, 58).
+        data_tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('dim_clientes')
+                field: cliente_id
+              config:
+                severity: warn
+                store_failures: true
       - name: fecha_pedido
         description: Fecha del pedido.
       - name: estado
         description: pendiente, completado o cancelado; puede traer 'error_sync' (el origen lo manda como 'ERROR_SYNC'; staging lo normaliza).
       - name: importe_cobrado
         description: '{{ doc("importe_cobrado") }}'
+  - name: dim_clientes
+    description: >
+      El grain es el cliente.
