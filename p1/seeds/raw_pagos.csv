@@ -79,3 +79,4 @@ id,pedido_id,metodo,importe
 83,20,BIZUM,90.00
 84,22,bizum,15.75
 85,10,bizum,120.00
+11,10,transferencia,1952.22
